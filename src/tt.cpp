@@ -36,7 +36,7 @@ namespace sagittar {
         void TranspositionTable::resetForSearch() { currentage++; }
 
         void TranspositionTable::store(const board::Board& board,
-                                       const u8            depth,
+                                       const i8            depth,
                                        const TTFlag        flag,
                                        i32                 value,
                                        const move::Move    move) {
@@ -46,7 +46,7 @@ namespace sagittar {
 
             // Only handles empty indices or stale entires
             const bool replace =
-              (entry.key == 0ULL) || (entry.getAge() < currentage) || (entry.getDepth() <= depth);
+              (entry.hash == 0ULL) || (entry.getAge() < currentage) || (entry.getDepth() <= depth);
             if (!replace)
             {
                 return;

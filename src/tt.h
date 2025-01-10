@@ -19,46 +19,56 @@ namespace sagittar {
         constexpr i32 INF_BOUND = 52000;
 
         struct TTData {
-            u8         depth;
+            i8         depth;
             TTFlag     flag;
             i32        value;
             move::Move move;
         };
 
         struct TTEntry {
-            u64 key;
-            u64 data;
+            u64        hash;
+            i8         depth;
+            u8         age;
+            TTFlag     flag;
+            i32        value;
+            move::Move move;
+
 
             TTEntry() :
-                key(0ULL),
-                data(0ULL) {}
+                hash(0ULL),
+                depth(0),
+                age(0),
+                flag(TTFlag::NONE),
+                value(0),
+                move(move::Move()) {}
 
             TTEntry(const u64        hash,
                     const u8         depth,
                     const u8         age,
                     const TTFlag     flag,
                     const i32        value,
-                    const move::Move move) {
-                data = (static_cast<u64>(move.id()) << 48)
-                     | (static_cast<u64>(value + INF_BOUND) << 16) | (flag << 14) | (age << 6)
-                     | depth;
-                key = hash ^ data;
-            }
+                    const move::Move move) :
+                hash(hash),
+                depth(depth),
+                age(age),
+                flag(flag),
+                value(value + INF_BOUND),
+                move(move) {}
 
-            u8 getDepth() const { return static_cast<u8>(data & 0x3F); }
+            u8 getDepth() const { return depth; }
 
-            u8 getAge() const { return static_cast<u8>((data >> 6) & 0xFF); }
+            u8 getAge() const { return age; }
 
-            move::Move getMove() const { return move::Move::fromId((data >> 48) & 0xFFFF); }
+            move::Move getMove() const { return move; }
 
-            bool isValid(const u64 hash) const { return (hash ^ data) == key; }
+            bool isValid(const u64 h) const { return (hash == h); }
 
             TTData toTTData() const {
                 TTData ttdata;
                 ttdata.depth = getDepth();
-                ttdata.flag  = static_cast<TTFlag>((data >> 14) & 0x3);
-                ttdata.value = static_cast<i32>((data >> 16) & 0xFFFFFFFF) - INF_BOUND;
-                ttdata.move  = move::Move::fromId((data >> 48) & 0xFFFF);
+                ttdata.flag  = flag;
+                ttdata.value = value - INF_BOUND;
+                ttdata.move  = getMove();
                 return ttdata;
             }
         };
@@ -78,7 +88,7 @@ namespace sagittar {
             void               clear();
             void               resetForSearch();
             void               store(const board::Board& board,
-                                     const u8            depth,
+                                     const i8            depth,
                                      const TTFlag        flag,
                                      const i32           value,
                                      const move::Move    move);
