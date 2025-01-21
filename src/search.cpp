@@ -94,23 +94,50 @@ namespace sagittar {
 
             const i32 alpha_orig = alpha;
 
-            const bool is_in_check = movegen::isInCheck(board);
-
             if (board.getPlyCount() >= MAX_DEPTH) [[unlikely]]
             {
                 return eval::evaluateBoard(board);
             }
+
             if (board.hasPositionRepeated() || board.getHalfmoveClock() >= 100)
             {
                 return 0;
             }
+
+            const bool is_in_check = movegen::isInCheck(board);
+
             if (is_in_check)
             {
                 depth++;
             }
+
             if (depth <= 0)
             {
                 return quiescencesearch(board, alpha, beta, info, result);
+            }
+
+            if (board.getPlyCount() > 0)
+            {
+                tt::TTEntry ttentry;
+                const bool  tthit = tt.probe(&ttentry, board);
+                if (tthit && ttentry.depth >= depth)
+                {
+                    i32 ttvalue = ttentry.value;
+
+                    if (ttvalue < -MATE_SCORE)
+                    {
+                        ttvalue += board.getPlyCount();
+                    }
+                    else if (ttvalue > MATE_SCORE)
+                    {
+                        ttvalue -= board.getPlyCount();
+                    }
+
+                    if (ttentry.flag == tt::TTFlag::EXACT)
+                    {
+                        return ttvalue;
+                    }
+                }
             }
 
             i32        best_score = -INF;
